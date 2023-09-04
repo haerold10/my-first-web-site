@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Typing Speed Measurement</title>
+        <style>
+            /* CSS 스타일링 */
+            body {
+                font-family: Arial, sans-serif;
+            }
+            h1 {
+                text-align: center;
+            }
+            label {
+                display: block;
+                margin-bottom: 10px;
+            }
+            input[type="text"] {
+                width: 300px;
+                padding: 5px;
+                font-size: 16px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            #result,
+            #timer {
+                margin-top: 20px;
+                font-size: 18px;
+            }
+            .highlight {
+                color: red;
+                font-weight: bold;
+            }
+            .ranking {
+                margin-top: 20px;
+            }
+            .ranking li {
+                list-style: none;
+            }
+            .ranking .first {
+                font-weight: bold;
+                color: red;
+            }
+            .ranking .second {
+                font-weight: bold;
+                color: blue;
+            }
+            .ranking .third {
+                font-weight: bold;
+                color: green;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Typing Speed Measurement</h1>
+        <form id="typing-form">
+            <label for="student-id">Student ID:</label>
+            <input type="text" id="student-id" required /><br /><br />
+            <label for="name">Name:</label>
+            <input type="text" id="name" required /><br /><br />
+            <label for="typed-text">Typed Text:</label>
+            <input type="text" id="typed-text" onkeyup="enterkey()" required /><br /><br />
+            <button type="button" id="start-button">Start</button>
+            <button type="button" id="end-button">End</button>
+            <button type="button" id="reset-button">Reset</button>
+            <button type="button" id="show-ranking-button">Show Ranking</button>
+        </form>
+        <div id="sentence"></div>
+        <div id="result"></div>
+        <div id="timer"></div>
+        <div id="ranking" class="ranking"></div>
+        <script>
+            var startButton = document.getElementById("start-button");
+            var endButton = document.getElementById("end-button");
+            var resetButton = document.getElementById("reset-button");
+            var showRankingButton = document.getElementById("show-ranking-button");
+            var typingForm = document.getElementById("typing-form");
+            var resultDiv = document.getElementById("result");
+            var timerDiv = document.getElementById("timer");
+            var sentenceDiv = document.getElementById("sentence");
+            var rankingDiv = document.getElementById("ranking");
+            var start_time, end_time;
+            var started = false;
+            var given_text = "";
+            var errorIndices = [];
+            var rankingData = [];
+            sentenceDiv.innerHTML = "";
+            var quotes = [
+                "The only way to do great work is to love what you do. - Steve Jobs",
+                "In the middle of every difficulty lies opportunity. - Albert Einstein",
+                "Believe you can and you're halfway there. - Theodore Roosevelt",
+                "Success is not final, failure is not fatal: It is the courage to continue that counts. - Winston Churchill",
+                "The journey of a thousand miles begins with one step. - Lao Tzu",
+            ];
+            given_text = quotes[Math.floor(Math.random() * quotes.length)];
+
+            function showErrors() {
+                var typed_text = document.getElementById("typed-text").value;
+                typed_text = typed_text.trim();
+                errorIndices = [];
+                for (var i = 0; i < given_text.length; i++) {
+                    if (given_text[i] !== typed_text[i]) {
+                        errorIndices.push(i);
+                    }
+                }
+                var sentenceHTML = "";
+                for (var j = 0; j < given_text.length; j++) {
+                    if (errorIndices.includes(j)) {
+                        sentenceHTML += "<span class='highlight'>" + given_text[j] + "</span>";
+                    } else {
+                        sentenceHTML += given_text[j];
+                    }
+                }
+                sentenceDiv.innerHTML = sentenceHTML;
+            }
+
+            document.getElementById("typed-text").addEventListener("keypress", function (event) {
+                if (!started) {
+                    start_time = new Date();
+                    started = true;
+                }
+                if (event.keyCode == 13) {
+                    end_time = new Date();
+                    var time = end_time - start_time;
+                    if (document.getElementById("typed-text").value.trim() !== given_text) {
+                        resultDiv.innerHTML = "Error: Typed text does not match the given text";
+                    } else {
+                        resultDiv.innerHTML = "Typing Speed: " + calculateTypingSpeed(time) + " WPM";
+                        saveResult();
+                    }
+                }
+            });
+
+            endButton.addEventListener("click", function () {
+                if (!start_time) {
+                    resultDiv.innerHTML = "Error: Please click the Start button first";
+                    return;
+                }
+                end_time = new Date();
+                var time_diff = end_time - start_time;
+                var typed_text = document.getElementById("typed-text").value;
+                typed_text = typed_text.trim();
+                if (typed_text !== given_text) {
+                    resultDiv.innerHTML = "Error: Typed text does not match the given text";
+                    return;
+                }
+                resultDiv.innerHTML = "Your typing speed: " + calculateTypingSpeed(time_diff) + " WPM";
+            });
+
+            showRankingButton.addEventListener("click", function () {
+                if (rankingData.length === 0) {
+                    rankingDiv.innerHTML = "No ranking data available";
+                    return;
+                }
+                rankingDiv.innerHTML = "<h2>Ranking</h2>";
+                var rankingList = document.createElement("ul");
+                rankingData.forEach(function (item, index) {
+                    var listItem = document.createElement("li");
+                    listItem.innerHTML = "Student ID: " + item.student_id + ", Name: " + item.name + ", Typing Speed: " + item.typing_speed + " WPM";
+                    if (index === 0) {
+                        listItem.classList.add("first");
+                    } else if (index === 1) {
+                        listItem.classList.add("second");
+                    } else if (index === 2) {
+                        listItem.classList.add("third");
+                    }
+                    rankingList.appendChild(listItem);
+                });
+                rankingDiv.appendChild(rankingList);
+            });
+
+            resetButton.addEventListener("click", function () {
+                start_time = null;
+                end_time = null;
+                started = false;
+                document.getElementById("typed-text").value = "";
+                resultDiv.innerHTML = "";
+                timerDiv.innerHTML = "";
+                given_text = quotes[Math.floor(Math.random() * quotes.length)];
+                sentenceDiv.innerHTML = given_text;
+            });
+
+            setInterval(function () {
+                if (start_time && !end_time) {
+                    var current_time = new Date();
+                    var time_diff = current_time - start_time;
+                    timerDiv.innerHTML = "Timer: " + Math.floor(time_diff / 1000) + " seconds";
+                }
+            }, 1000);
+
+            function calculateTypingSpeed(time) {
+                var wordsTyped = document.getElementById("typed-text").value.trim().split(" ").length;
+                var minutes = time / 60000;
+                var typing_speed = Math.round(wordsTyped / minutes);
+                return typing_speed;
+            }
+
+            function saveResult() {
+                if (!start_time || !end_time) {
+                    resultDiv.innerHTML = "Error: Please complete the typing test first";
+                    return;
+                }
+                var student_id = document.getElementById("student-id").value;
+                var name = document.getElementById("name").value;
+                var typing_speed = calculateTypingSpeed(end_time - start_time);
+                var result = {
+                    student_id: student_id,
+                    name: name,
+                    typing_speed: typing_speed,
+                };
+                rankingData.push(result);
+                resultDiv.innerHTML = "Results saved successfully!";
+            }
+
+            given_text = quotes[Math.floor(Math.random() * quotes.length)];
+            sentenceDiv.innerHTML = given_text;
+        </script>
+    </body>
+</html>
